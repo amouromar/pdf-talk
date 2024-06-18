@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pdfTalk</title>
+    <style>
+      body {
+        background: #fff;
+        background-size: 240% 240%;
+        animation: gradient-animation 40s ease infinite;
+        font-family: "Segoe UI Web (West European)", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial,
+          sans-serif;
+        color: #333;
+        text-align: center;
+      }
+
+      @keyframes gradient-animation {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      header {
+        background-color: #ffffff09;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 60px;
+        margin-top: -45px;
+        width: auto;
+        height: 8rem;
+      }
+
+      header img {
+        max-width: 115px;
+        margin-right: 20px;
+      }
+
+      h1 {
+        color: #999999;
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      p {
+        color: #8a8a8a;
+        margin: -40px 0;
+        font-size: x-large;
+      }
+
+      /* Custom file input styles */
+      .custom-file-input {
+        display: none;
+      }
+
+      .custom-file-label {
+        background-color: #a5a5a5;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        display: inline-block;
+        font-family: "Segoe UI Web (West European)", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial,
+          sans-serif;
+        font-size: medium;
+        font-weight: 700;
+      }
+
+      .custom-file-label:hover {
+        background-color: #777777;
+      }
+
+      /* Style for selected file name */
+      .file-name {
+        margin-top: 10px;
+      }
+
+      form {
+        margin: 45px auto;
+        width: 80%;
+        height: auto;
+        max-width: 600px; /* Adjust maximum width as needed */
+        background-color: #6d6d6d1e;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Center items horizontally */
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #555555;
+      }
+
+      button[type="submit"] {
+        background-color: #a5a5a5;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+        font-family: "Segoe UI Web (West European)", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial,
+          sans-serif;
+        font-size: medium;
+        font-weight: 700;
+      }
+
+      button[type="submit"]:hover {
+        background-color: #777777;
+      }
+
+      .pdf-preview-container {
+        width: 100%;
+        max-width: 600px; /* Adjust maximum width as needed */
+        height: auto;
+        margin: 20px 0;
+        position: relative;
+      }
+
+      .pdf-preview {
+        width: 100%;
+        height: auto;
+        position: relative;
+      }
+
+      canvas {
+        width: 240px;
+        height: 295px;
+        cursor: pointer; /* Change cursor to indicate clickability */
+        position: relative;
+      }
+
+      .fullscreen {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: #fff;
+        z-index: 1000;
+      }
+
+      .fullscreen .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-size: 16px;
+        z-index: 1001;
+      }
+
+      .fullscreen-icon {
+        position: absolute;
+        bottom: 10px;
+        right: 100px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        border: none;
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/static/PDF%20to%20Speech%20Converter.png" alt="logo" />
+      <h1>pdfTalk</h1>
+    </header>
+    <p>make your <i>pdf</i> talk by converting it to <b>audio...</b></p>
+    <form method="post" enctype="multipart/form-data" action="/">
+      <!-- PDF preview container -->
+      <div class="pdf-preview-container">
+        <div id="pdf-preview" class="pdf-preview"></div>
+      </div>
+
+      <!-- Custom file input -->
+      <label for="pdf" class="custom-file-label">Choose a PDF file</label>
+      <input
+        type="file"
+        name="pdf"
+        id="pdf"
+        class="custom-file-input"
+        required
+      />
+      <div class="file-name"></div>
+      <!-- Display selected file name -->
+      <button type="submit">Convert</button>
+    </form>
+
+    <!-- JavaScript to display selected file name and PDF preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <script>
+      const fileInput = document.getElementById("pdf");
+      const fileLabel = document.querySelector(".custom-file-label");
+      const fileNameContainer = document.querySelector(".file-name");
+      const pdfPreview = document.getElementById("pdf-preview");
+
+      fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        const fileName = file.name;
+        fileLabel.textContent = "Selected file: " + fileName;
+        fileNameContainer.textContent = " ";
+
+        // Check if the selected file is a PDF
+        if (file.type === "application/pdf") {
+          const reader = new FileReader();
+
+          reader.onload = function (event) {
+            const typedArray = new Uint8Array(event.target.result);
+            const loadingTask = pdfjsLib.getDocument(typedArray);
+
+            loadingTask.promise.then(function (pdf) {
+              pdf.getPage(1).then(function (page) {
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d");
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                const renderContext = {
+                  canvasContext: context,
+                  viewport: viewport,
+                };
+
+                page.render(renderContext).promise.then(function () {
+                  pdfPreview.innerHTML = "";
+                  pdfPreview.appendChild(canvas);
+
+                  // Add fullscreen icon
+                  const fullscreenIcon = document.createElement("div");
+                  fullscreenIcon.textContent = "Click PDF for Fullscreen";
+                  fullscreenIcon.className = "fullscreen-icon";
+                  pdfPreview.appendChild(fullscreenIcon);
+
+                  // Add click event listener to open in fullscreen
+                  canvas.addEventListener("click", function () {
+                    if (!document.fullscreenElement) {
+                      if (canvas.requestFullscreen) {
+                        canvas.requestFullscreen();
+                      } else if (canvas.mozRequestFullScreen) {
+                        canvas.mozRequestFullScreen();
+                      } else if (canvas.webkitRequestFullscreen) {
+                        canvas.webkitRequestFullscreen();
+                      } else if (canvas.msRequestFullscreen) {
+                        canvas.msRequestFullscreen();
+                      }
+                    } else {
+                      if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                      } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                      } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                      } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                      }
+                    }
+                  });
+
+                  // Tap to open/close fullscreen for mobile
+                  canvas.addEventListener("touchend", function () {
+                    if (!document.fullscreenElement) {
+                      if (canvas.requestFullscreen) {
+                        canvas.requestFullscreen();
+                      } else if (canvas.mozRequestFullScreen) {
+                        canvas.mozRequestFullScreen();
+                      } else if (canvas.webkitRequestFullscreen) {
+                        canvas.webkitRequestFullscreen();
+                      } else if (canvas.msRequestFullscreen) {
+                        canvas.msRequestFullscreen();
+                      }
+                    } else {
+                      if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                      } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                      } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                      } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                      }
+                    }
+                  });
+
+                  // Add close button for desktop
+                  document.addEventListener("fullscreenchange", function () {
+                    if (document.fullscreenElement) {
+                      const closeBtn = document.createElement("button");
+                      closeBtn.textContent = "Close";
+                      closeBtn.className = "close-btn";
+                      closeBtn.addEventListener("click", function () {
+                        if (document.exitFullscreen) {
+                          document.exitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                          document.mozCancelFullScreen();
+                        } else if (document.webkitExitFullscreen) {
+                          document.webkitExitFullscreen();
+                        } else if (document.msExitFullscreen) {
+                          document.msExitFullscreen();
+                        }
+                      });
+                      document.fullscreenElement.appendChild(closeBtn);
+                    } else {
+                      const closeBtn = document.querySelector(".close-btn");
+                      if (closeBtn) {
+                        closeBtn.remove();
+                      }
+                    }
+                  });
+                });
+              });
+            });
+          };
+
+          reader.readAsArrayBuffer(file);
+        } else {
+          pdfPreview.innerHTML = "<p>Please select a PDF file</p>";
+        }
+      });
+    </script>
+  </body>
+</html>
