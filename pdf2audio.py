@@ -3,7 +3,7 @@ import pdfplumber
 from gtts import gTTS
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 
 def pdf_to_text(pdf_path):
